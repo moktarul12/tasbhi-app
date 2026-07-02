@@ -29,6 +29,7 @@ const QiblaScreen: React.FC = () => {
   const { location } = useLocation();
   const [heading, setHeading] = useState<number | null>(null);
   const rotation = useRef(new Animated.Value(0)).current;
+  const dialRotation = useRef(new Animated.Value(0)).current;
 
   const qiblaBearing = computeQiblaBearing(location.latitude, location.longitude);
 
@@ -50,6 +51,7 @@ const QiblaScreen: React.FC = () => {
 
   const deviceHeading = heading ?? 0;
   const needleRotation = angleDiff(qiblaBearing - deviceHeading);
+  const dialAngle = angleDiff(-deviceHeading);
 
   useEffect(() => {
     Animated.timing(rotation, {
@@ -59,10 +61,29 @@ const QiblaScreen: React.FC = () => {
     }).start();
   }, [needleRotation]);
 
+  useEffect(() => {
+    Animated.timing(dialRotation, {
+      toValue: dialAngle,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [dialAngle]);
+
   const rotateStyle = {
     transform: [
       {
         rotate: rotation.interpolate({
+          inputRange: [0, 360],
+          outputRange: ['0deg', '360deg'],
+        }),
+      },
+    ],
+  };
+
+  const dialRotateStyle = {
+    transform: [
+      {
+        rotate: dialRotation.interpolate({
           inputRange: [0, 360],
           outputRange: ['0deg', '360deg'],
         }),
@@ -96,17 +117,19 @@ const QiblaScreen: React.FC = () => {
       </TouchableOpacity>
 
       <View style={styles.compassWrap}>
-        <Svg width={260} height={260}>
-          <Circle cx={130} cy={130} r={124} stroke={palette.gold} strokeWidth={2} fill={theme.card} />
-          <Circle cx={130} cy={130} r={100} stroke={theme.border} strokeWidth={1} fill="none" />
-          <SvgText x={130} y={22} fontSize={14} fill={theme.textMuted} textAnchor="middle">N</SvgText>
-          <SvgText x={130} y={246} fontSize={14} fill={theme.textMuted} textAnchor="middle">S</SvgText>
-          <SvgText x={16} y={135} fontSize={14} fill={theme.textMuted} textAnchor="middle">W</SvgText>
-          <SvgText x={244} y={135} fontSize={14} fill={theme.textMuted} textAnchor="middle">E</SvgText>
-          <Line x1={130} y1={130} x2={130} y2={30} stroke={theme.border} strokeWidth={1} />
-          <Line x1={130} y1={130} x2={130} y2={230} stroke={theme.border} strokeWidth={1} />
-          <Line x1={30} y1={130} x2={230} y2={130} stroke={theme.border} strokeWidth={1} />
-        </Svg>
+        <Animated.View style={[styles.dialWrap, dialRotateStyle]}>
+          <Svg width={260} height={260}>
+            <Circle cx={130} cy={130} r={124} stroke={palette.gold} strokeWidth={2} fill={theme.card} />
+            <Circle cx={130} cy={130} r={100} stroke={theme.border} strokeWidth={1} fill="none" />
+            <SvgText x={130} y={22} fontSize={14} fontWeight="bold" fill={theme.text} textAnchor="middle">N</SvgText>
+            <SvgText x={130} y={246} fontSize={14} fill={theme.textMuted} textAnchor="middle">S</SvgText>
+            <SvgText x={16} y={135} fontSize={14} fill={theme.textMuted} textAnchor="middle">W</SvgText>
+            <SvgText x={244} y={135} fontSize={14} fill={theme.textMuted} textAnchor="middle">E</SvgText>
+            <Line x1={130} y1={130} x2={130} y2={30} stroke={theme.border} strokeWidth={1} />
+            <Line x1={130} y1={130} x2={130} y2={230} stroke={theme.border} strokeWidth={1} />
+            <Line x1={30} y1={130} x2={230} y2={130} stroke={theme.border} strokeWidth={1} />
+          </Svg>
+        </Animated.View>
 
         <Animated.View style={[styles.needleWrap, rotateStyle]}>
           <View style={styles.needleTop}>
@@ -192,6 +215,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
+  },
+  dialWrap: {
+    width: 260,
+    height: 260,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   needleWrap: {
     position: 'absolute',
