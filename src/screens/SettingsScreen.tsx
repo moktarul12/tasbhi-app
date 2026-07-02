@@ -77,16 +77,6 @@ const SettingsScreen: React.FC = () => {
         </TouchableOpacity>
       ))}
 
-      <TouchableOpacity
-        style={[styles.row, { borderColor: theme.danger, marginTop: 8 }]}
-        onPress={onReset}
-      >
-        <View style={styles.rowLeft}>
-          <Ionicons name="log-out" size={18} color={theme.danger} />
-          <Text style={[styles.rowLabel, { color: theme.danger }]}>{t('logout')}</Text>
-        </View>
-      </TouchableOpacity>
-
       <Modal visible={showLangModal} transparent animationType="fade" onRequestClose={() => setShowLangModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>

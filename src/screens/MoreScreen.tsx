@@ -71,13 +71,6 @@ const MoreScreen: React.FC = () => {
 
   const onLanguage = () => Alert.alert('Language', 'Use the Settings screen to change language.');
 
-  const onLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: t('cancel'), style: 'cancel' },
-      { text: 'Logout', style: 'destructive' },
-    ]);
-  };
-
   const renderItem = (item: MenuItem, index: number, total: number) => {
     const isLast = index === total - 1;
     const handlePress = () => {
@@ -131,9 +124,6 @@ const MoreScreen: React.FC = () => {
           <Text style={styles.profileName}>Guest</Text>
           <Text style={styles.profileSub}>{t('assalamuAlaikum')}</Text>
         </View>
-        <TouchableOpacity style={styles.proBadge} activeOpacity={0.8}>
-          <Text style={styles.proBadgeText}>Login</Text>
-        </TouchableOpacity>
       </LinearGradient>
 
       {sections.map((section, sIndex) => (
@@ -141,18 +131,6 @@ const MoreScreen: React.FC = () => {
           {section.items.map((item, i) => renderItem(item, i, section.items.length))}
         </View>
       ))}
-
-      <TouchableOpacity
-        style={[styles.card, styles.logoutCard]}
-        onPress={onLogout}
-        activeOpacity={0.7}
-      >
-        <View style={[styles.iconBox, { backgroundColor: theme.danger }]}>
-          <Ionicons name="log-out" size={18} color={palette.white} />
-        </View>
-        <Text style={[styles.rowLabel, { color: theme.danger }]}>Logout</Text>
-        <Ionicons name="chevron-forward" size={18} color={theme.danger} />
-      </TouchableOpacity>
 
       <Text style={[styles.footer, { color: theme.textMuted }]}>{t('appName')} v1.0</Text>
     </ScrollView>
@@ -247,9 +225,6 @@ const styles = StyleSheet.create({
   rowValue: {
     fontSize: 14,
     marginRight: 4,
-  },
-  logoutCard: {
-    paddingVertical: 2,
   },
   footer: {
     textAlign: 'center',

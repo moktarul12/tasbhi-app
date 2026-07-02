@@ -67,7 +67,6 @@ const en: Dict = {
   backupRestore: 'Backup & Restore',
   helpSupport: 'Help & Support',
   aboutApp: 'About Zikr-n-Tashbi',
-  logout: 'Logout',
   allZikr: 'All Zikr',
   light: 'Light',
   dark: 'Dark',
