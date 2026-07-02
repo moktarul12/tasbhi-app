@@ -35,6 +35,13 @@ const ZikrListScreen: React.FC = () => {
     navigation.navigate('HomeTab');
   };
 
+  const openRandom = () => {
+    if (zikrs.length === 0) return;
+    const randomZikr = zikrs[Math.floor(Math.random() * zikrs.length)];
+    setLastZikrId(randomZikr.id);
+    navigation.navigate('HomeTab');
+  };
+
   const renderItem = ({ item }: { item: Zikr }) => (
     <TouchableOpacity
       style={[styles.item, { backgroundColor: theme.card, borderColor: theme.border }]}
@@ -76,11 +83,25 @@ const ZikrListScreen: React.FC = () => {
         />
       </View>
 
+      <TouchableOpacity
+        style={[styles.randomCard, { backgroundColor: theme.primary + '12', borderColor: theme.primary + '40' }]}
+        onPress={openRandom}
+      >
+        <View style={[styles.randomIcon, { backgroundColor: theme.primary }]}>
+          <Ionicons name="shuffle" size={20} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.randomTitle, { color: theme.text }]}>Random Zikr</Text>
+          <Text style={[styles.randomSub, { color: theme.textMuted }]}>Tap to read any zikr at random</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={theme.primary} />
+      </TouchableOpacity>
+
       <FlatList
         data={filtered}
         keyExtractor={(z) => z.id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: 20, gap: 12 }}
+        contentContainerStyle={{ paddingBottom: 20, gap: 12, paddingTop: 12 }}
         showsVerticalScrollIndicator={false}
       />
 
@@ -161,6 +182,30 @@ const styles = StyleSheet.create({
     color: palette.white,
     fontSize: 14,
     fontWeight: '800',
+  },
+  randomCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 4,
+  },
+  randomIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  randomTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  randomSub: {
+    fontSize: 12,
+    marginTop: 2,
   },
   addButton: {
     flexDirection: 'row',
