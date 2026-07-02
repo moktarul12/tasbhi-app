@@ -106,6 +106,9 @@ const en: Dict = {
   qiblaDegrees: 'Qibla Bearing',
   locationPermissionDenied: 'Location permission denied. You can still search for a city manually.',
   currentLocation: 'Current Location',
+  suggestions: 'Suggestions',
+  noSuggestions: 'No matching suggestions',
+  tapToFill: 'Tap to auto-fill',
 };
 
 const bn: Dict = {
