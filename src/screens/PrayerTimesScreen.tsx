@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -25,6 +25,23 @@ type Nav = CompositeNavigationProp<
 
 type RangeKey = 'today' | 'sevenDays' | 'oneMonth' | 'custom';
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEKDAY_LABELS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function isInRange(d: Date, start: Date, end: Date) {
+  const t = d.getTime();
+  return t >= start.getTime() && t <= end.getTime();
+}
+
+function daysBetween(start: Date, end: Date): number {
+  const ms = end.getTime() - start.getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
+}
+
 const PRAYER_ROWS: { key: keyof Pick<DayPrayerTimes, 'fajr' | 'sunrise' | 'dhuhr' | 'asr' | 'maghrib' | 'isha'>; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'fajr', labelKey: 'fajr', icon: 'partly-sunny' },
   { key: 'sunrise', labelKey: 'sunrise', icon: 'sunny' },
@@ -40,7 +57,11 @@ const PrayerTimesScreen: React.FC = () => {
   const { location } = useLocation();
   const [range, setRange] = useState<RangeKey>('today');
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customDays, setCustomDays] = useState('10');
+  const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [customStart, setCustomStart] = useState<Date>(new Date());
+  const [customEnd, setCustomEnd] = useState<Date>(addDays(new Date(), 6));
+  const [pickingStart, setPickingStart] = useState(true);
 
   const todayTimes = useMemo(
     () => computePrayerTimes(location.latitude, location.longitude, new Date()),
@@ -51,15 +72,18 @@ const PrayerTimesScreen: React.FC = () => {
   const currentPrayer = getCurrentPrayer(todayTimes);
 
   const listDays = useMemo(() => {
-    let count = 1;
-    if (range === 'sevenDays') count = 7;
-    else if (range === 'oneMonth') count = 30;
-    else if (range === 'custom') count = Math.max(1, Math.min(90, Number(customDays) || 10));
-    else return [];
+    if (range === 'today') return [];
+    let start: Date, count: number;
+    if (range === 'sevenDays') { start = new Date(); count = 7; }
+    else if (range === 'oneMonth') { start = new Date(); count = 30; }
+    else if (range === 'custom') {
+      start = customStart;
+      count = Math.min(90, Math.max(1, daysBetween(customStart, customEnd)));
+    } else return [];
     return Array.from({ length: count }, (_, i) =>
-      computePrayerTimes(location.latitude, location.longitude, addDays(new Date(), i))
+      computePrayerTimes(location.latitude, location.longitude, addDays(start, i))
     );
-  }, [range, customDays, location.latitude, location.longitude]);
+  }, [range, customStart, customEnd, location.latitude, location.longitude]);
 
   const RANGE_TABS: { key: RangeKey; label: string }[] = [
     { key: 'today', label: t('today') },
@@ -70,9 +94,46 @@ const PrayerTimesScreen: React.FC = () => {
 
   const onSelectRange = (key: RangeKey) => {
     if (key === 'custom') {
+      setCalendarMonth(customStart.getMonth());
+      setCalendarYear(customStart.getFullYear());
+      setPickingStart(true);
       setShowCustomModal(true);
     }
     setRange(key);
+  };
+
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(calendarYear, calendarMonth, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+    const cells: (Date | null)[] = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(calendarYear, calendarMonth, d));
+    return cells;
+  }, [calendarYear, calendarMonth]);
+
+  const onCalendarDayPress = (d: Date) => {
+    if (pickingStart) {
+      setCustomStart(d);
+      if (d.getTime() > customEnd.getTime()) setCustomEnd(d);
+      setPickingStart(false);
+    } else {
+      if (d.getTime() < customStart.getTime()) {
+        setCustomStart(d);
+      } else {
+        setCustomEnd(d);
+      }
+      setPickingStart(true);
+    }
+  };
+
+  const goPrevMonth = () => {
+    if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(calendarYear - 1); }
+    else setCalendarMonth(calendarMonth - 1);
+  };
+  const goNextMonth = () => {
+    if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(calendarYear + 1); }
+    else setCalendarMonth(calendarMonth + 1);
   };
 
   return (
@@ -194,15 +255,81 @@ const PrayerTimesScreen: React.FC = () => {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: theme.card }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>{t('selectDateRange')}</Text>
-            <Text style={[styles.modalLabel, { color: theme.textMuted }]}>Number of days from today</Text>
-            <TextInput
-              value={customDays}
-              onChangeText={setCustomDays}
-              keyboardType="number-pad"
-              style={[styles.modalInput, { color: theme.text, borderColor: theme.border }]}
-              placeholder="10"
-              placeholderTextColor={theme.textMuted}
-            />
+
+            <View style={styles.datePillRow}>
+              <TouchableOpacity
+                style={[styles.datePill, { borderColor: pickingStart ? theme.primary : theme.border, backgroundColor: pickingStart ? theme.primary + '15' : 'transparent' }]}
+                onPress={() => setPickingStart(true)}
+              >
+                <Text style={[styles.datePillLabel, { color: theme.textMuted }]}>{t('startDate')}</Text>
+                <Text style={[styles.datePillValue, { color: theme.text }]}>
+                  {customStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              </TouchableOpacity>
+              <Ionicons name="arrow-forward" size={16} color={theme.textMuted} />
+              <TouchableOpacity
+                style={[styles.datePill, { borderColor: !pickingStart ? theme.primary : theme.border, backgroundColor: !pickingStart ? theme.primary + '15' : 'transparent' }]}
+                onPress={() => setPickingStart(false)}
+              >
+                <Text style={[styles.datePillLabel, { color: theme.textMuted }]}>{t('endDate')}</Text>
+                <Text style={[styles.datePillValue, { color: theme.text }]}>
+                  {customEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.calNavRow}>
+              <TouchableOpacity onPress={goPrevMonth} style={styles.calNavBtn}>
+                <Ionicons name="chevron-back" size={20} color={theme.text} />
+              </TouchableOpacity>
+              <Text style={[styles.calMonthLabel, { color: theme.text }]}>{MONTH_NAMES[calendarMonth]} {calendarYear}</Text>
+              <TouchableOpacity onPress={goNextMonth} style={styles.calNavBtn}>
+                <Ionicons name="chevron-forward" size={20} color={theme.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.calWeekRow}>
+              {WEEKDAY_LABELS.map((w) => (
+                <Text key={w} style={[styles.calWeekLabel, { color: theme.textMuted }]}>{w}</Text>
+              ))}
+            </View>
+
+            <View style={styles.calGrid}>
+              {calendarDays.map((d, i) => {
+                if (!d) return <View key={`e${i}`} style={styles.calCell} />;
+                const isStart = isSameDay(d, customStart);
+                const isEnd = isSameDay(d, customEnd);
+                const inRange = isInRange(d, customStart, customEnd);
+                const isToday = isSameDay(d, new Date());
+                return (
+                  <TouchableOpacity
+                    key={`d${i}`}
+                    style={styles.calCell}
+                    onPress={() => onCalendarDayPress(d)}
+                  >
+                    <View style={[
+                      styles.calDayInner,
+                      isStart && { backgroundColor: theme.primary },
+                      isEnd && { backgroundColor: theme.primary },
+                      inRange && !isStart && !isEnd && { backgroundColor: theme.primary + '20' },
+                    ]}>
+                      <Text style={[
+                        styles.calDayText,
+                        { color: isStart || isEnd ? '#fff' : inRange ? theme.primary : theme.text },
+                        isToday && !isStart && !isEnd && { fontWeight: '800' },
+                      ]}>
+                        {d.getDate()}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={[styles.calRangeInfo, { color: theme.textMuted }]}>
+              {daysBetween(customStart, customEnd)} day{daysBetween(customStart, customEnd) !== 1 ? 's' : ''} selected
+            </Text>
+
             <PrimaryButton title={t('apply')} onPress={() => setShowCustomModal(false)} />
           </View>
         </View>
@@ -408,6 +535,79 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     fontSize: 14,
+  },
+  datePillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  datePill: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  datePillLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  datePillValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  calNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  calNavBtn: {
+    padding: 6,
+  },
+  calMonthLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  calWeekRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  calWeekLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  calGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calDayInner: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calDayText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  calRangeInfo: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 4,
   },
 });
 
