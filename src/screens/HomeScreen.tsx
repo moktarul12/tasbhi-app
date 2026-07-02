@@ -41,10 +41,7 @@ const HomeScreen: React.FC = () => {
           <Text style={styles.headerTitle}>{t('appName')}</Text>
           <Text style={styles.headerSub}>{t('assalamuAlaikum')}</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Reminders')} style={styles.bellBtn}>
-          <Ionicons name="notifications-outline" size={24} color="#0F2E3C" />
-          <View style={styles.bellDot} />
-        </TouchableOpacity>
+        <View style={{ width: 26 }} />
       </View>
 
       <View style={styles.content}>
@@ -119,20 +116,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
     color: '#6A7B8A',
-  },
-  bellBtn: {
-    position: 'relative',
-  },
-  bellDot: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: '#4A904A',
-    borderWidth: 1.5,
-    borderColor: '#F8F5F0',
   },
   content: {
     flex: 1,
