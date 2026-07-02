@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/HomeScreen';
 import ZikrListScreen from '../screens/ZikrListScreen';
 import PrayerTimesScreen from '../screens/PrayerTimesScreen';
@@ -13,6 +14,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabs: React.FC = () => {
   const { theme, t } = useSettings();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -23,8 +25,8 @@ const MainTabs: React.FC = () => {
         tabBarStyle: {
           backgroundColor: theme.tabBar,
           borderTopColor: theme.border,
-          height: 64,
-          paddingBottom: 10,
+          height: 64 + insets.bottom,
+          paddingBottom: 10 + insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
